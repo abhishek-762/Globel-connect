@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { destinations } from '../constants';
+import { useDestinations } from '../contexts/DestinationContext';
 import DestinationCard from '../components/DestinationCard';
 import { Destination } from '../types';
 
 const Destinations: React.FC = () => {
+    const { destinations, loading } = useDestinations();
     const [searchQuery, setSearchQuery] = useState('');
     const [regionFilter, setRegionFilter] = useState<'All' | 'India' | 'Outside India'>('All');
 

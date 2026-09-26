@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { destinations, testimonials } from '../constants';
+import { testimonials } from '../constants';
 import { Destination, Package, Review } from '../types';
 import DestinationCard from '../components/DestinationCard';
 import PackageCard from '../components/PackageCard';
@@ -8,6 +8,7 @@ import TestimonialSlider from '../components/TestimonialSlider';
 import ReviewCard from '../components/ReviewCard';
 import ReviewForm from '../components/ReviewForm';
 import { usePackages } from '../contexts/PackageContext';
+import { useDestinations } from '../contexts/DestinationContext';
 import { useReviews } from '../contexts/ReviewContext';
 
 const Hero: React.FC = () => (
@@ -25,6 +26,7 @@ const Hero: React.FC = () => (
 
 const Home: React.FC = () => {
     const { packages } = usePackages();
+    const { destinations } = useDestinations();
     const { reviews: customerReviews, addReview } = useReviews();
     const featuredDestinations = destinations.slice(0, 3);
     const popularPackages = packages.slice(0, 3);

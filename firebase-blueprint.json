@@ -11,6 +11,15 @@
         "createdAt": "string"
       }
     },
+    "Destination": {
+      "path": "destinations/{destinationId}",
+      "fields": {
+        "id": "number",
+        "name": "string",
+        "description": "string",
+        "image": "string"
+      }
+    },
     "Package": {
       "path": "packages/{packageId}",
       "fields": {

@@ -17,6 +17,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { PackageProvider } from './contexts/PackageContext';
+import { DestinationProvider } from './contexts/DestinationContext';
 import { ReviewProvider } from './contexts/ReviewContext';
 import { PaymentProvider } from './contexts/PaymentContext';
 import { AuditLogProvider } from './contexts/AuditLogContext';
@@ -27,12 +28,13 @@ const App: React.FC = () => {
     <HashRouter>
       <CurrencyProvider>
         <PackageProvider>
-          <ReviewProvider>
-            <AuthProvider>
-              <BookingProvider>
-                <AuditLogProvider>
-                  <PaymentProvider>
-                    <div className="flex flex-col min-h-screen">
+          <DestinationProvider>
+            <ReviewProvider>
+              <AuthProvider>
+                <BookingProvider>
+                  <AuditLogProvider>
+                    <PaymentProvider>
+                      <div className="flex flex-col min-h-screen">
                       <Header />
                       <main className="flex-grow">
                         <Routes>
@@ -63,7 +65,8 @@ const App: React.FC = () => {
               </BookingProvider>
             </AuthProvider>
           </ReviewProvider>
-        </PackageProvider>
+        </DestinationProvider>
+      </PackageProvider>
       </CurrencyProvider>
     </HashRouter>
   );

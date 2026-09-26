@@ -1,24 +1,27 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePackages } from '../contexts/PackageContext';
+import { useDestinations } from '../contexts/DestinationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookings } from '../contexts/BookingContext';
-import { Package, PackageCategory, BookingRecord } from '../types';
+import { Package, PackageCategory, BookingRecord, Destination } from '../types';
 import EditPackageModal from '../components/EditPackageModal';
 import AddPackageModal from '../components/AddPackageModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import DestinationManagerModal from '../components/DestinationManagerModal';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { usePayment } from '../contexts/PaymentContext';
 import { useAuditLog } from '../contexts/AuditLogContext';
 
 const AdminDashboard: React.FC = () => {
     const { packages, updatePackage, addPackage, deletePackage, seedInitialPackages, loading: packagesLoading } = usePackages();
+    const { destinations, addDestination, updateDestination, deleteDestination, seedInitialDestinations, loading: destinationsLoading } = useDestinations();
     const { user, userProfile, logout } = useAuth();
     const { bookings, updateBookingStatus, updatePaymentStatus, loading: bookingsLoading } = useBookings();
     const { convertCurrency } = useCurrency();
     const { upiLink, updateUpiLink } = usePayment();
     const { logs, addLog } = useAuditLog();
 
-    const [activeTab, setActiveTab] = useState<'packages' | 'bookings' | 'settings' | 'logs'>('packages');
+    const [activeTab, setActiveTab] = useState<'packages' | 'destinations' | 'bookings' | 'settings' | 'logs'>('packages');
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,11 +30,14 @@ const AdminDashboard: React.FC = () => {
     const [packageToDelete, setPackageToDelete] = useState<Package | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+    const [destSearchQuery, setDestSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<'All' | PackageCategory>('All');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newUpiLink, setNewUpiLink] = useState(upiLink);
     const [showUpiSaved, setShowUpiSaved] = useState(false);
     const [seedSuccess, setSeedSuccess] = useState(false);
+    const [isDestModalOpen, setIsDestModalOpen] = useState(false);
+    const [destinationToEdit, setDestinationToEdit] = useState<Destination | null>(null);
 
     useEffect(() => {
         setNewUpiLink(upiLink);
@@ -46,15 +52,56 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleSeedPackages = async () => {
-        if (window.confirm('Seed/restore all 10 curated travel packages to Cloud Firestore?')) {
+        if (window.confirm('Sync/seed all curated packages and destinations to Cloud Firestore in real time?')) {
             setIsSubmitting(true);
-            await seedInitialPackages();
-            await addLog('CREATE', 'Seeded initial curated packages into Firestore');
-            setIsSubmitting(false);
-            setSeedSuccess(true);
-            setTimeout(() => setSeedSuccess(false), 4000);
+            try {
+                await Promise.all([seedInitialPackages(), seedInitialDestinations()]);
+                await addLog('CREATE', 'Synced and seeded all curated packages and destinations to Firestore');
+                setSeedSuccess(true);
+                setTimeout(() => setSeedSuccess(false), 4000);
+            } catch (err: any) {
+                alert('Error syncing to Firestore: ' + (err?.message || err));
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
+
+    const handleOpenCreateDest = () => {
+        setDestinationToEdit(null);
+        setIsDestModalOpen(true);
+    };
+
+    const handleOpenEditDest = (dest: Destination) => {
+        setDestinationToEdit(dest);
+        setIsDestModalOpen(true);
+    };
+
+    const handleSaveDestination = async (destData: { name: string; description: string; image: string }) => {
+        if (destinationToEdit) {
+            await updateDestination({ id: destinationToEdit.id, ...destData });
+            await addLog('EDIT', `Updated destination "${destData.name}" in Firestore`);
+        } else {
+            await addDestination(destData);
+            await addLog('CREATE', `Created destination "${destData.name}" in Firestore`);
+        }
+    };
+
+    const handleDeleteDestination = async (dest: Destination) => {
+        if (window.confirm(`Are you sure you want to delete "${dest.name}" from Firestore?`)) {
+            await deleteDestination(dest.id);
+            await addLog('DELETE', `Deleted destination "${dest.name}" from Firestore`);
+        }
+    };
+
+    const filteredDestinations = useMemo(() => {
+        if (!destSearchQuery.trim()) return destinations;
+        const q = destSearchQuery.toLowerCase();
+        return destinations.filter(d => 
+            d.name.toLowerCase().includes(q) || 
+            d.description.toLowerCase().includes(q)
+        );
+    }, [destinations, destSearchQuery]);
 
     const filteredPackages = useMemo(() => {
         let tempPackages = packages;
@@ -169,24 +216,30 @@ const AdminDashboard: React.FC = () => {
                                 Logged in as: <span className="font-semibold text-gray-800">{userProfile?.displayName || user?.email || 'admin'}</span> ({user?.email || 'System Administrator'})
                             </p>
                         </div>
-                        <div className="flex items-center flex-wrap gap-3">
+                        <div className="flex items-center flex-wrap gap-2.5">
                             <button
                                 onClick={handleSeedPackages}
                                 disabled={isSubmitting}
                                 className="px-3 py-2 bg-blue-50 text-primary border border-blue-200 text-xs font-semibold rounded-md hover:bg-blue-100 transition-colors"
-                                title="Seed default travel packages to Firestore"
+                                title="Sync/Seed all curated packages and destinations to Firestore"
                             >
-                                Seed Default Packages
+                                {isSubmitting ? 'Syncing...' : 'Sync/Seed All to Firestore'}
+                            </button>
+                            <button
+                                onClick={handleOpenCreateDest}
+                                className="px-3.5 py-2 bg-teal-600 text-white text-xs font-semibold rounded-md hover:bg-teal-700 transition-colors shadow-sm"
+                            >
+                                + New Destination
                             </button>
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
-                                className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                                className="px-3.5 py-2 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700 transition-colors shadow-sm"
                             >
                                 + New Package
                             </button>
                             <button
                                 onClick={logout}
-                                className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 transition-colors shadow-sm"
+                                className="px-3 py-2 bg-red-600 text-white text-xs font-semibold rounded-md hover:bg-red-700 transition-colors shadow-sm"
                             >
                                 Logout
                             </button>
@@ -195,7 +248,7 @@ const AdminDashboard: React.FC = () => {
 
                     {seedSuccess && (
                         <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center justify-between">
-                            <span>Curated tour packages successfully synced and verified in Cloud Firestore!</span>
+                            <span>Curated packages and destinations successfully synced and verified in Cloud Firestore real-time database!</span>
                             <button onClick={() => setSeedSuccess(false)} className="text-green-600 font-bold">&times;</button>
                         </div>
                     )}
@@ -211,6 +264,16 @@ const AdminDashboard: React.FC = () => {
                             }`}
                         >
                             Tour Packages ({packages.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('destinations')}
+                            className={`py-3 px-1 font-poppins text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
+                                activeTab === 'destinations'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            Destinations ({destinations.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('bookings')}
@@ -346,6 +409,101 @@ const AdminDashboard: React.FC = () => {
                                     </table>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* TAB: DESTINATIONS */}
+                    {activeTab === 'destinations' && (
+                        <div>
+                            <div className="bg-white shadow rounded-lg p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="w-full md:w-96">
+                                    <label htmlFor="destSearch" className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                                        Search Destinations
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="destSearch"
+                                        placeholder="Search by city, country, or keyword..."
+                                        value={destSearchQuery}
+                                        onChange={(e) => setDestSearchQuery(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                                    <button
+                                        onClick={handleOpenCreateDest}
+                                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center gap-1.5"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Destination
+                                    </button>
+                                </div>
+                            </div>
+
+                            {destinationsLoading ? (
+                                <div className="bg-white rounded-lg p-12 text-center text-gray-500 shadow">
+                                    Loading destinations in real-time from Firestore...
+                                </div>
+                            ) : filteredDestinations.length > 0 ? (
+                                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                    {filteredDestinations.map((dest) => (
+                                        <div key={dest.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-shadow">
+                                            <div className="relative">
+                                                <img
+                                                    src={dest.image}
+                                                    alt={dest.name}
+                                                    className="w-full h-44 object-cover"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80';
+                                                    }}
+                                                />
+                                                <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/70 text-white backdrop-blur-xs">
+                                                    ID: #{dest.id}
+                                                </span>
+                                                {dest.name.toLowerCase().includes('india') && (
+                                                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white shadow-xs">
+                                                        India
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="p-5 flex-1 flex flex-col justify-between">
+                                                <div>
+                                                    <h4 className="text-lg font-bold font-montserrat text-gray-900">{dest.name}</h4>
+                                                    <p className="text-xs text-gray-600 mt-2 line-clamp-3 leading-relaxed">
+                                                        {dest.description}
+                                                    </p>
+                                                </div>
+                                                <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+                                                    <button
+                                                        onClick={() => handleOpenEditDest(dest)}
+                                                        className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                        </svg>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteDestination(dest)}
+                                                        className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors flex items-center gap-1"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-lg p-12 text-center text-gray-500 shadow">
+                                    No destinations found matching "{destSearchQuery}".
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -532,6 +690,12 @@ const AdminDashboard: React.FC = () => {
                 onConfirm={handleConfirmDelete}
                 packageName={packageToDelete?.name || ''}
                 loading={isSubmitting}
+            />
+            <DestinationManagerModal
+                isOpen={isDestModalOpen}
+                onClose={() => setIsDestModalOpen(false)}
+                onSubmit={handleSaveDestination}
+                destinationToEdit={destinationToEdit}
             />
         </>
     );
