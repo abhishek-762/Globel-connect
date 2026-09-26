@@ -99,16 +99,16 @@ const About: React.FC = () => {
                     <p className="text-center text-gray-600 mt-2">The passionate professionals behind your perfect vacation.</p>
                     <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         <TeamMember 
-                            name="Abhishek Yadav" 
-                            role="Founder and CEO" 
-                            image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&h=400&q=80" 
-                            bio="Spearheading Global Connect's vision, global travel partnerships, and transformative holiday experiences."
+                            name="Manish Yadav" 
+                            role="CEO" 
+                            image="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&h=400&q=80" 
+                            bio="Leading overall company strategy, global operations, and worldwide travel partner alliances."
                         />
                         <TeamMember 
-                            name="Manish Yadav" 
-                            role="Co Founder and Head of Operations" 
-                            image="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&h=400&q=80" 
-                            bio="Overseeing worldwide ground logistics, trusted hotel networks, and seamless on-trip execution."
+                            name="Abhishek Yadav" 
+                            role="CTO" 
+                            image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&h=400&q=80" 
+                            bio="Spearheading Global Connect's technology architecture, digital booking innovations, and platform scalability."
                         />
                         <TeamMember 
                             name="Gautam Gopal" 
