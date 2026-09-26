@@ -81,7 +81,19 @@ const MyBookings: React.FC = () => {
                                                 {b.packageName}
                                             </h3>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {b.paymentMethod === 'cash' ? (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                    </svg>
+                                                    Pay Cash on Arrival
+                                                </span>
+                                            ) : (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                                    Online Payment
+                                                </span>
+                                            )}
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                 b.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
                                                 b.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
@@ -94,7 +106,7 @@ const MyBookings: React.FC = () => {
                                                 b.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                                                 'bg-orange-50 text-orange-700 border border-orange-200'
                                             }`}>
-                                                Payment: {b.paymentStatus}
+                                                {b.paymentStatus === 'Paid' ? 'Paid' : b.paymentMethod === 'cash' ? 'Cash Due' : 'Payment Pending'}
                                             </span>
                                         </div>
                                     </div>

@@ -51,6 +51,8 @@
         "totalPrice": "number",
         "activities": "array",
         "specialRequests": "string?",
+        "paymentMethod": "string?",
+        "paymentStatus": "string?",
         "status": "string",
         "createdAt": "string"
       }

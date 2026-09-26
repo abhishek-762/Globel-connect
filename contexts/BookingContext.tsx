@@ -16,8 +16,10 @@ import {
 interface BookingContextType {
     bookings: BookingRecord[];
     userBookings: BookingRecord[];
-    loading: boolean;
-    createBooking: (bookingData: Omit<BookingRecord, 'id' | 'createdAt' | 'status' | 'paymentStatus'>) => Promise<string>;
+    createBooking: (bookingData: Omit<BookingRecord, 'id' | 'createdAt' | 'status' | 'paymentStatus'> & {
+        status?: BookingRecord['status'];
+        paymentStatus?: BookingRecord['paymentStatus'];
+    }) => Promise<string>;
     updateBookingStatus: (id: string, status: BookingRecord['status']) => Promise<void>;
     updatePaymentStatus: (id: string, paymentStatus: BookingRecord['paymentStatus']) => Promise<void>;
 }
@@ -76,14 +78,18 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, [user, isAdmin]);
 
     const createBooking = async (
-        bookingData: Omit<BookingRecord, 'id' | 'createdAt' | 'status' | 'paymentStatus'>
+        bookingData: Omit<BookingRecord, 'id' | 'createdAt' | 'status' | 'paymentStatus'> & {
+            status?: BookingRecord['status'];
+            paymentStatus?: BookingRecord['paymentStatus'];
+        }
     ): Promise<string> => {
         const bookingId = `book_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const record: BookingRecord = {
+            paymentMethod: bookingData.paymentMethod || 'online',
+            status: bookingData.status || (bookingData.paymentMethod === 'cash' ? 'Confirmed' : 'Pending'),
+            paymentStatus: bookingData.paymentStatus || 'Pending',
             ...bookingData,
             id: bookingId,
-            status: 'Pending',
-            paymentStatus: 'Pending',
             createdAt: new Date().toISOString(),
         };
 

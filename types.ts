@@ -89,6 +89,7 @@ export interface BookingRecord {
   currency: string;
   activities: string[];
   specialRequests?: string;
+  paymentMethod?: 'online' | 'cash';
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   paymentStatus: 'Pending' | 'Paid' | 'Failed';
   createdAt: string;

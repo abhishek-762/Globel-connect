@@ -548,7 +548,19 @@ const AdminDashboard: React.FC = () => {
                                                         <td className="px-6 py-4">
                                                             <div className="font-semibold text-gray-900 text-sm">{b.packageName}</div>
                                                             <div className="text-xs font-mono text-gray-400">#{b.id.slice(-8)}</div>
-                                                            <div className="text-xs text-gray-500">{b.travelers} Traveler(s)</div>
+                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                                <span className="text-xs text-gray-500">{b.travelers} Traveler(s)</span>
+                                                                <span className="text-gray-300">&bull;</span>
+                                                                {b.paymentMethod === 'cash' ? (
+                                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                        Cash on Arrival
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                                                        Online
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm font-medium text-gray-900">{b.fullName}</div>

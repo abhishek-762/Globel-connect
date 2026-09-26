@@ -27,8 +27,10 @@ const BookingForm: React.FC<BookingFormProps> = ({ packageId, packageName, price
         activities: [] as string[],
         specialRequests: '',
     });
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmedCashBookingId, setConfirmedCashBookingId] = useState<string | null>(null);
 
     // Auto-fill from authenticated user profile
     useEffect(() => {
@@ -113,7 +115,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ packageId, packageName, price
     const handleConfirmBooking = async () => {
         setIsSubmitting(true);
         try {
-            await createBooking({
+            const bookingId = await createBooking({
                 userId: user?.uid || 'guest_' + Date.now(),
                 userEmail: user?.email || formData.email,
                 packageId,
@@ -127,14 +129,26 @@ const BookingForm: React.FC<BookingFormProps> = ({ packageId, packageName, price
                 currency: currency.code,
                 activities: formData.activities,
                 specialRequests: formData.specialRequests || undefined,
+                paymentMethod,
+                status: paymentMethod === 'cash' ? 'Confirmed' : 'Pending',
+                paymentStatus: 'Pending',
             });
 
             setIsModalOpen(false);
-            navigate('/payment');
+
+            if (paymentMethod === 'cash') {
+                setConfirmedCashBookingId(bookingId);
+            } else {
+                navigate('/payment');
+            }
         } catch (error) {
             console.error('Error saving booking to Firestore:', error);
             setIsModalOpen(false);
-            navigate('/payment');
+            if (paymentMethod === 'cash') {
+                setConfirmedCashBookingId(`GC-${Date.now().toString().slice(-6)}`);
+            } else {
+                navigate('/payment');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -281,12 +295,88 @@ const BookingForm: React.FC<BookingFormProps> = ({ packageId, packageName, price
                         />
                     </div>
 
+                    {/* Payment Option Selection */}
+                    <div className="pt-4 border-t border-gray-200">
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                            Select Payment Method:
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Pay with Cash */}
+                            <label 
+                                className={`flex items-start p-3.5 border-2 rounded-xl cursor-pointer transition-all ${
+                                    paymentMethod === 'cash' 
+                                        ? 'border-emerald-600 bg-emerald-50/50 shadow-xs ring-1 ring-emerald-500' 
+                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    value="cash"
+                                    checked={paymentMethod === 'cash'}
+                                    onChange={() => setPaymentMethod('cash')}
+                                    className="mt-1 h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                                />
+                                <div className="ml-3">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-bold text-gray-900 text-sm">Pay with Cash</span>
+                                        <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 rounded">
+                                            No Online Pay
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                        Pay cash directly upon arrival or at our local office. Instant booking confirmation!
+                                    </p>
+                                </div>
+                            </label>
+
+                            {/* Pay Online */}
+                            <label 
+                                className={`flex items-start p-3.5 border-2 rounded-xl cursor-pointer transition-all ${
+                                    paymentMethod === 'online' 
+                                        ? 'border-primary bg-blue-50/40 shadow-xs ring-1 ring-primary' 
+                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    value="online"
+                                    checked={paymentMethod === 'online'}
+                                    onChange={() => setPaymentMethod('online')}
+                                    className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                                />
+                                <div className="ml-3">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-bold text-gray-900 text-sm">Pay Online (UPI / QR)</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                        Instant scan & pay via Google Pay, PhonePe, Paytm, QR code, or Bank Transfer.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <div className="mt-6">
                         <button 
                             type="submit" 
-                            className="w-full py-3 px-4 border border-transparent rounded-full shadow-sm text-white bg-secondary font-bold hover:bg-opacity-90 transition-transform duration-300 transform hover:scale-105"
+                            className={`w-full py-3.5 px-4 rounded-xl shadow-md text-white font-bold transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 ${
+                                paymentMethod === 'cash' 
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-400' 
+                                    : 'bg-secondary hover:bg-opacity-90'
+                            }`}
                         >
-                            Proceed to Payment ({convertCurrency(totalPrice)})
+                            {paymentMethod === 'cash' ? (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <span>Confirm Booking &mdash; Pay with Cash ({convertCurrency(totalPrice)})</span>
+                                </>
+                            ) : (
+                                <span>Proceed to Online Payment ({convertCurrency(totalPrice)})</span>
+                            )}
                         </button>
                     </div>
                 </form>
@@ -296,8 +386,80 @@ const BookingForm: React.FC<BookingFormProps> = ({ packageId, packageName, price
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 onConfirm={handleConfirmBooking}
-                bookingDetails={{ ...formData, totalPrice }}
+                bookingDetails={{ ...formData, totalPrice, paymentMethod }}
             />
+
+            {/* Instant Cash Booking Success Modal */}
+            {confirmedCashBookingId && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 animate-fade-in border border-gray-100 text-center">
+                        <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 mb-2">
+                            Booking Confirmed &bull; Cash on Arrival
+                        </span>
+
+                        <h3 className="text-2xl font-bold font-montserrat text-gray-900">
+                            Your Trip is Booked!
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Thank you, <strong className="text-gray-800">{formData.fullName}</strong>. No online payment was required. You can pay cash directly when your tour begins.
+                        </p>
+
+                        <div className="my-6 p-4 rounded-xl bg-gray-50 border border-gray-200 text-left text-xs space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 font-semibold">Booking ID:</span>
+                                <span className="font-mono font-bold text-primary">{confirmedCashBookingId}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 font-semibold">Package:</span>
+                                <span className="font-bold text-gray-800">{packageName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 font-semibold">Travel Date:</span>
+                                <span className="font-bold text-gray-800">{formData.travelDate}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 font-semibold">Travelers:</span>
+                                <span className="font-bold text-gray-800">{formData.travelers} Person(s)</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-200 pt-2 text-sm">
+                                <span className="font-bold text-gray-700">Cash Due on Arrival:</span>
+                                <span className="font-black text-emerald-700">{convertCurrency(totalPrice)}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 text-xs text-left mb-6">
+                            <strong>Cash Instructions:</strong> Please save your Booking ID. Our operations coordinator will contact your phone (<strong className="text-amber-950">{formData.phone}</strong>) via WhatsApp/Call to confirm your arrival arrangements.
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => window.print()}
+                                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Print Voucher
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setConfirmedCashBookingId(null);
+                                    navigate('/my-bookings');
+                                }}
+                                className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm"
+                            >
+                                View in My Bookings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
