@@ -5,11 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const navLinks = [
   { name: 'Home', path: '/' },
-  { name: 'About Us', path: '/about' },
   { name: 'Destinations', path: '/destinations' },
   { name: 'Packages', path: '/packages' },
   { name: 'Gallery', path: '/gallery' },
   { name: 'Contact Us', path: '/contact' },
+  { name: 'About Us', path: '/about' },
 ];
 
 const Header: React.FC = () => {
