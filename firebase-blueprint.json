@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "path": "users/{userId}",
+      "fields": {
+        "id": "string",
+        "email": "string",
+        "displayName": "string",
+        "photoURL": "string?",
+        "role": "string",
+        "createdAt": "string"
+      }
+    },
+    "Package": {
+      "path": "packages/{packageId}",
+      "fields": {
+        "id": "number",
+        "name": "string",
+        "destination": "string",
+        "duration": "string",
+        "price": "number",
+        "highlights": "array",
+        "image": "string",
+        "category": "string",
+        "description": "string",
+        "itinerary": "array"
+      }
+    },
+    "Booking": {
+      "path": "bookings/{bookingId}",
+      "fields": {
+        "id": "string",
+        "userId": "string",
+        "userEmail": "string",
+        "packageId": "number",
+        "packageName": "string",
+        "fullName": "string",
+        "email": "string",
+        "phone": "string",
+        "travelers": "number",
+        "travelDate": "string",
+        "totalPrice": "number",
+        "activities": "array",
+        "specialRequests": "string?",
+        "status": "string",
+        "createdAt": "string"
+      }
+    },
+    "Review": {
+      "path": "reviews/{reviewId}",
+      "fields": {
+        "id": "number",
+        "packageId": "number",
+        "packageName": "string",
+        "author": "string",
+        "userId": "string?",
+        "rating": "number",
+        "comment": "string",
+        "createdAt": "string?"
+      }
+    },
+    "AuditLogEntry": {
+      "path": "auditLogs/{logId}",
+      "fields": {
+        "id": "number",
+        "action": "string",
+        "adminUser": "string",
+        "details": "string",
+        "timestamp": "string"
+      }
+    }
+  }
+}
